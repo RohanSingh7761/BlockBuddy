@@ -98,10 +98,19 @@ If 'other-trash':
   
   // Parse the JSON response and return it
   try {
-    const jsonResponse = JSON.parse(fullResponse);
+    // Remove markdown code blocks if present
+    let cleanResponse = fullResponse.trim();
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    const jsonResponse = JSON.parse(cleanResponse);
     return jsonResponse;
   } catch (error) {
     console.error('Error parsing JSON response:', error);
+    console.error('Raw response:', fullResponse);
     return { intent: 'error', message: 'Failed to parse response' };
   }
 }
