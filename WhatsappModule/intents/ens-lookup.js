@@ -9,14 +9,16 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
+const ALCHEMY_SEPOLIA_URL = process.env.ALCHEMY_SEPOLIA_URL;
 
 /**
  * Lookup comprehensive ENS information
  * @param {string} ensName - ENS name to lookup (e.g., "vitalik.eth")
+ * @param {string} network - Network to use ("mainnet" or "sepolia"), defaults to "mainnet"
  * @returns {Object} ENS details or error
  */
-export async function ensLookup(ensName) {
-    console.log('✓ ensLookup executed for:', ensName);
+export async function ensLookup(ensName, network = "mainnet") {
+    console.log('✓ ensLookup executed for:', ensName, 'on network:', network);
     
     try {
         // Validate ENS name format
@@ -27,8 +29,10 @@ export async function ensLookup(ensName) {
             };
         }
 
-        const provider = new JsonRpcProvider(ALCHEMY_URL);
-        console.log(`🔍 Looking up ENS: ${ensName}...`);
+        const providerUrl = network === "sepolia" ? ALCHEMY_SEPOLIA_URL : ALCHEMY_URL;
+        const networkName = network === "sepolia" ? "Sepolia" : "Mainnet";
+        const provider = new JsonRpcProvider(providerUrl);
+        console.log(`🔍 Looking up ENS: ${ensName} on ${networkName}...`);
 
         // 1. Resolve ENS to address
         const address = await provider.resolveName(ensName);
@@ -90,6 +94,7 @@ export async function ensLookup(ensName) {
             success: true,
             ensName: ensName,
             ethAddress: address,
+            network: network,
             
             // Text Records
             textRecords: {
@@ -124,7 +129,8 @@ export async function ensLookup(ensName) {
         }
 
         // Format message
-        let message = `🎯 ENS Lookup Results for: ${ensName}\n\n`;
+        let message = `🎯 ENS Lookup Results for: ${ensName}\n`;
+        message += `🌐 Network: ${networkName}\n\n`;
         message += `📍 ETH Address: ${address}\n`;
         
         if (ensData.isPrimaryName) {

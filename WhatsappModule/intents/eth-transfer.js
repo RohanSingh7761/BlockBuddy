@@ -14,8 +14,9 @@ const LOCAL_PHONE_FILE = join(__dirname, '.last-phone.txt');
 // Load .env from WhatsappModule folder
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
-// Alchemy provider endpoint
+// Alchemy provider endpoints
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
+const ALCHEMY_SEPOLIA_URL = process.env.ALCHEMY_SEPOLIA_URL;
 const DEFAULT_CHAIN = "ethereum";
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-32-byte-key-for-testing!';
 
@@ -44,10 +45,11 @@ function decryptPrivateKey(encryptedKey) {
  * @param {string} to - Receiver address or ENS name
  * @param {string} amount - Amount to send in wei (will be converted to ETH for display)
  * @param {boolean} ens - Whether 'to' is an ENS name (true) or address (false)
+ * @param {string} network - Network to use ("mainnet" or "sepolia"), defaults to "mainnet"
  * @returns {Object} Transfer result
  */
-export async function handleEthTransfer(to, amount, ens = false) {
-    console.log('✓ handleEthTransfer executed with:', { to, amount, ens });
+export async function handleEthTransfer(to, amount, ens = false, network = "mainnet") {
+    console.log('✓ handleEthTransfer executed with:', { to, amount, ens, network });
     
     // Convert amount from wei to ETH for processing
     const amountInEth = formatUnits(amount, 'ether');
@@ -100,7 +102,10 @@ export async function handleEthTransfer(to, amount, ens = false) {
         }
         
         // 5. Set up provider and wallet
-        const provider = new JsonRpcProvider(ALCHEMY_URL);
+        const providerUrl = network === "sepolia" ? ALCHEMY_SEPOLIA_URL : ALCHEMY_URL;
+        const networkName = network === "sepolia" ? "Sepolia" : "Mainnet";
+        console.log(`📡 Using ${networkName} network`);
+        const provider = new JsonRpcProvider(providerUrl);
         const decryptedKey = decryptPrivateKey(wallet.encrypted_private_key);
         const signer = new Wallet(decryptedKey, provider);
         
@@ -187,11 +192,12 @@ export async function handleEthTransfer(to, amount, ens = false) {
             console.log('✅ Transaction confirmed!');
             return {
                 success: true,
-                message: `${statusMessage}✅ Successfully sent ${amountInEth} ETH to ${recipientAddress}\n\nTransaction hash: ${tx.hash}\nBlock: ${receipt.blockNumber}`,
+                message: `${statusMessage}✅ Successfully sent ${amountInEth} ETH to ${recipientAddress}\n\nNetwork: ${networkName}\nTransaction hash: ${tx.hash}\nBlock: ${receipt.blockNumber}`,
                 txHash: tx.hash,
                 blockNumber: receipt.blockNumber,
                 to: recipientAddress,
-                amount: amountInEth
+                amount: amountInEth,
+                network: network
             };
         } else {
             console.log('❌ Transaction failed.');

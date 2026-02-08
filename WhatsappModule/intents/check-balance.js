@@ -10,11 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const LOCAL_PHONE_FILE = join(__dirname, '.last-phone.txt');
 
-// Alchemy provider endpoint
+// Alchemy provider endpoints
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
+const ALCHEMY_SEPOLIA_URL = process.env.ALCHEMY_SEPOLIA_URL;
 const DEFAULT_CHAIN = "ethereum";
 
-export async function handleCheckBalance() {
+export async function handleCheckBalance(network = "mainnet") {
     console.log('✓ handleCheckBalance executed');
     
     try {
@@ -55,8 +56,10 @@ export async function handleCheckBalance() {
         console.log(`📍 Wallet Address: ${wallet.address}`);
         
         // 4. Create provider and fetch balance
-        console.log('🔍 Fetching balance from Ethereum mainnet...');
-        const provider = new JsonRpcProvider(ALCHEMY_URL);
+        const providerUrl = network === "sepolia" ? ALCHEMY_SEPOLIA_URL : ALCHEMY_URL;
+        const networkName = network === "sepolia" ? "Ethereum Sepolia" : "Ethereum mainnet";
+        console.log(`🔍 Fetching balance from ${networkName}...`);
+        const provider = new JsonRpcProvider(providerUrl);
         const balanceWei = await provider.getBalance(wallet.address);
         const balanceEth = formatEther(balanceWei);
         
@@ -64,6 +67,7 @@ export async function handleCheckBalance() {
         console.log('\n💰 Balance Information:');
         console.log(`   Address: ${wallet.address}`);
         console.log(`   Balance: ${balanceEth} ETH`);
+        console.log(`   Network: ${network}`);
         console.log(`   Chain: ${DEFAULT_CHAIN}`);
         
         return {
@@ -71,7 +75,8 @@ export async function handleCheckBalance() {
             address: wallet.address,
             balance: balanceEth,
             balanceWei: balanceWei.toString(),
-            chain: DEFAULT_CHAIN
+            chain: DEFAULT_CHAIN,
+            network: network
         };
         
     } catch (error) {
